@@ -17,6 +17,10 @@
 
 (def broadcast-channel (channel 1))
 
+(defn success-response []
+  {:status 200
+   :headers {"content-type" "text/plain"}})
+
 (defn read-channel [res-channel req]
   (lg/info (str "Got read channel request" req))
   (receive broadcast-channel 
@@ -24,15 +28,21 @@
 				  :headers {"content-type" "text/plain"}
 				  :body (str %)})))
 
-(defn async-handler [response-channel request]
-  (enqueue response-channel
-    {:status 200
-     :headers {"content-type" "text/plain"}
-     :body "async response"}))
+(defn write-to-channel [res-channel req]
+  "Will write a message (obtained from the body of the request)
+   to the single broadcast channel"
+  (let [body (:body req)]
+    (println "Got body" body)
+    ; enqueue a message into the broad-cast channel
+    (enqueue broadcast-channel body)
+    ; send back a success response
+    (enqueue res-channel (success-response))))
 
 (defroutes web-routes
   (GET "/channels/:channel-name" [channel-name]
        (wrap-aleph-handler read-channel))
+  (POST "/channels/:channel-name" [channel-name]
+	(wrap-aleph-handler write-to-channel))
   (route/not-found "Page not found"))
 
 (defn -main [& args]
