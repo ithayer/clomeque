@@ -5,12 +5,9 @@
   (:require [clj-time.coerce         :as t-coerce])
   (:require [compojure.route         :as route]
 	    [compojure.handler       :as handler])
-<<<<<<< HEAD
   (:use lamina.core.channel)
   (:use aleph.http)
-=======
   (:require [clomeque.asyncclient    :as client])
->>>>>>> 34ccb95b8ac46fa0ace27a3e0fc4cc72bf38157b
   (:use clojure.pprint)
   (:use clojure.contrib.json)
   (:use ring.adapter.jetty)
