@@ -22,7 +22,7 @@
   (receive broadcast-channel 
 	   #(enqueue res-channel {:status 200
 				  :headers {"content-type" "text/plain"}
-				  :body %})))
+				  :body (str %)})))
 
 (defn async-handler [response-channel request]
   (enqueue response-channel
@@ -32,7 +32,7 @@
 
 (defroutes web-routes
   (GET "/channels/:channel-name" [channel-name]
-       (wrap-aleph-handler async-handler))
+       (wrap-aleph-handler read-channel))
   (route/not-found "Page not found"))
 
 (defn -main [& args]
