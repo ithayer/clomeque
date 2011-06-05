@@ -30,5 +30,5 @@
 (defn -main [& args]
   (lg/info (str "Running with args: " (string/join " " args) 
 		" :from: " (. System getProperty "user.dir")))
-  (run-jetty (handler/site web-routes) {:port 9501}))
-
+  (start-http-server (wrap-ring-handler web-routes) {:port 9501})
+  (println "server started"))
