@@ -7,6 +7,7 @@
 	    [compojure.handler       :as handler])
   (:use lamina.core.channel)
   (:use aleph.http)
+  (:use aleph.formats)
   (:require [clomeque.asyncclient    :as client])
   (:use clojure.pprint)
   (:use clojure.contrib.json)
@@ -19,7 +20,8 @@
 
 (defn success-response []
   {:status 200
-   :headers {"content-type" "text/plain"}})
+   :headers {"content-type" "text/plain"}
+   :body "success"})
 
 (defn read-channel [res-channel req]
   (lg/info (str "Got read channel request" req))
@@ -31,7 +33,7 @@
 (defn write-to-channel [res-channel req]
   "Will write a message (obtained from the body of the request)
    to the single broadcast channel"
-  (let [body (:body req)]
+  (let [body (channel-buffer->string (input-stream->channel-buffer (:body req)))]
     (println "Got body" body)
     ; enqueue a message into the broad-cast channel
     (enqueue broadcast-channel body)
