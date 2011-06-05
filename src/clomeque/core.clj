@@ -18,17 +18,25 @@
 (def broadcast-channel (channel 1))
 
 (defn read-channel [res-channel req]
-  (receive broadcast-channel #(enqueue res-channel {:status 200
-						    :headers {"content-type" "text/plain"}
-						    :body %})))
+  (lg/info (str "Got read channel request" req))
+  (receive broadcast-channel 
+	   #(enqueue res-channel {:status 200
+				  :headers {"content-type" "text/plain"}
+				  :body %})))
+
+(defn async-handler [response-channel request]
+  (enqueue response-channel
+    {:status 200
+     :headers {"content-type" "text/plain"}
+     :body "async response"}))
 
 (defroutes web-routes
   (GET "/channels/:channel-name" [channel-name]
-       (wrap-aleph-handler read-channel))
+       (wrap-aleph-handler async-handler))
   (route/not-found "Page not found"))
 
 (defn -main [& args]
   (lg/info (str "Running with args: " (string/join " " args) 
 		" :from: " (. System getProperty "user.dir")))
-  (start-http-server (wrap-ring-handler web-routes) {:port 9501})
+  (start-http-server (wrap-ring-handler web-routes) {:port 9502})
   (println "server started"))
