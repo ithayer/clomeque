@@ -1,4 +1,4 @@
-(ns clomeque.core
+(ns clomeque.asyncclient
   (:require [clojure.contrib.logging :as lg])
   (:require [clojure.contrib.string  :as string])
   (:require [aleph.http.client       :as client])

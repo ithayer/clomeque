@@ -5,6 +5,7 @@
   (:require [clj-time.coerce         :as t-coerce])
   (:require [compojure.route         :as route]
 	    [compojure.handler       :as handler])
+  (:require [clomeque.asyncclient    :as client])
   (:use clojure.pprint)
   (:use clojure.contrib.json)
   (:use ring.adapter.jetty)
