@@ -26,6 +26,10 @@
 (defn create-queue []
   (Queue. (channel) []))
 
+;; create a queue message
+(defn create-message [msg]
+  (Message. (System/currentTimeMillis) msg))
+
 ;; a ref to the queues in the system (do we need a ref?)
 (def queues (ref {}))
 
@@ -47,40 +51,43 @@
   (receive (:channel dest-queue) 
 	   #(enqueue res-channel {:status 200
 				  :headers {"content-type" "text/plain"}
-				  :body (str %)})))
+				  :body (str (:message %))})))
 
 ;; write a message to queue
 (defn write-queue [dest-queue res-channel req]
   "Will write a message (obtained from the body of the request)
-   to the single broadcast channel"
-  ;; TODO: need to submit a message, not just the body
-  (let [body (channel-buffer->string (input-stream->channel-buffer (:body req)))]
-    (println "Got body" body)
-    ; enqueue a message into the broad-cast channel
-    (enqueue (:channel dest-queue) body)
-    ;; TODO: need to write to delay buffer as well!
-    ;(conj (:delay-buffer) body)
+   to the provided destination queue"
+  (let [body  (channel-buffer->string (input-stream->channel-buffer (:body req)))
+	q-msg (create-message body)]
+    (lg/info (str "Got body" body))
+    ; enqueue a message into the destination queue's channel and delay buffer
+    (enqueue (:channel dest-queue) q-msg)
+    (conj (:delay-buffer dest-queue) body)
     ; send back a success response
     (enqueue res-channel (success-response "Message submitted!"))))
 
 (defroutes web-routes
   (GET "/channels/:channel-name" [channel-name]
+       (lg/info (str "Got read request for queue" channel-name))
        (let [q (get @queues channel-name)]
 	 (if q
 	   (wrap-aleph-handler (partial read-queue q))
 	   (error-response (str "Channel" channel-name "does not exist")))))
   (PUT "/channels/:channel-name" [channel-name]
+       (lg/info (str "Got request to create queue with name" channel-name))
        (dosync
 	(if (@queues channel-name)
 	  (error-response "Queue already exists")
 	  (let [queues (alter queues assoc channel-name (create-queue))]
 	    (success-response (str "Queue" channel-name "created!"))))))
   (POST "/channels/:channel-name" [channel-name]
+	(lg/info (str "Got message submit request on queue" channel-name))
 	(let [q (get @queues channel-name)]
 	  (if q
 	    (wrap-aleph-handler (partial write-queue q))
 	    (error-response (str "Channel" channel-name "does not exist")))))
   (DELETE "/channels/:channel-name" [channel-name]
+	  (lg/info (str "Got request to delete queue with name" channel-name))
 	  (dosync
 	   (if (@queues channel-name)
 	     (do
