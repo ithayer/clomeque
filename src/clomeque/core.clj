@@ -17,14 +17,14 @@
   (:gen-class))
 
 ;; a Queue actually consists of a lamina channel and out delay buffer
-(defrecord Queue [channel delay-buffer])
+(defrecord Queue [channel delay-buffer config-params])
 
 ;; a message, probably needs to become a protocol to support tostring
 (defrecord Message [timestamp message])
 
 ;; queue constructor, simple
 (defn create-queue []
-  (Queue. (channel) []))
+  (Queue. (channel) [] {}))
 
 ;; create a queue message
 (defn create-message [msg]
@@ -40,8 +40,8 @@
    :body msg})
 
 ;; TODO: error responses aren't always 404s !
-(defn error-response [msg]
-  {:status 404
+(defn error-response [code msg]
+  {:status code
    :headers {"content-type" "text/plain"}
    :body msg})
 
@@ -59,9 +59,9 @@
    to the provided destination queue"
   (let [body  (channel-buffer->string (input-stream->channel-buffer (:body req)))
 	q-msg (create-message body)]
-    (lg/info (str "Got body" body))
-    ; enqueue a message into the destination queue's channel and delay buffer
+    ; enqueue a message into the destination queue's channel 
     (enqueue (:channel dest-queue) q-msg)
+    ; and into the delay buffer, we probably need to do some checks here
     (conj (:delay-buffer dest-queue) body)
     ; send back a success response
     (enqueue res-channel (success-response "Message submitted!"))))
@@ -69,31 +69,30 @@
 (defroutes web-routes
   (GET "/queues/:queue-name" [queue-name]
        (lg/info (str "Got read request for queue" queue-name))
-       (let [q (get @queues queue-name)]
-	 (if q
-	   (wrap-aleph-handler (partial read-queue q))
-	   (error-response (str "Queue" queue-name "does not exist")))))
+       (if-let [q (get @queues queue-name)]
+	 (wrap-aleph-handler (partial read-queue q))
+	 (error-response 404 (str "Queue" queue-name "does not exist"))))
   (PUT "/queues/:queue-name" [queue-name]
        (lg/info (str "Got request to create queue with name" queue-name))
        (dosync
-	(if (@queues queue-name)
-	  (error-response "Queue already exists")
-	  (let [queues (alter queues assoc queue-name (create-queue))]
+	(if-let [q (@queues queue-name)]
+	  (error-response 403 "Queue already exists")
+	  (do
+	    (alter queues assoc queue-name (create-queue))
 	    (success-response (str "Queue" queue-name "created!"))))))
   (POST "/queues/:queue-name" [queue-name]
 	(lg/info (str "Got message submit request on queue" queue-name))
-	(let [q (get @queues queue-name)]
-	  (if q
+	(if-let [q (get @queues queue-name)]
 	    (wrap-aleph-handler (partial write-queue q))
-	    (error-response (str "Queue" queue-name "does not exist")))))
+	    (error-response 404 (str "Queue" queue-name "does not exist"))))
   (DELETE "/queues/:queue-name" [queue-name]
 	  (lg/info (str "Got request to delete queue with name" queue-name))
 	  (dosync
-	   (if (@queues queue-name)
+	   (if-let [q (@queues queue-name)]
 	     (do
 	       (alter queues dissoc queue-name)
 	       (success-response (str "Queue" queue-name "was deleted!")))
-	     (error-response (str "Queue" queue-name "does not exist!")))))
+	     (error-response 404 (str "Queue" queue-name "does not exist!")))))
   (route/not-found "Page not found"))
 
 (defn -main [& args]
