@@ -24,20 +24,20 @@
 
 (defn create-queue [host queue callback]
   "Creates a queue named 'queue'."
-  (make-request-with-callback {:method :put :url (str host "/queue/" queue)} callback))
+  (make-request-with-callback {:method :put :url (str host "/queues/" queue)} callback))
 
 (defn delete-queue [host queue callback]
   "Deletes a queue named 'queue'."
-  (make-request-with-callback {:method :delete :url (str host "/queue/" queue)} callback))
+  (make-request-with-callback {:method :delete :url (str host "/queues/" queue)} callback))
 
 (defn read-queue [host queue callback]
   "Reads from 'queue' and call 'callback' with the results."
-  (make-request-with-callback {:method :get :url (str host "/queue/" queue)} callback))
+  (make-request-with-callback {:method :get :url (str host "/queues/" queue)} callback))
 
 (defn write-queue [host queue msg callback]
   "Writes to 'queue' and call 'callback' with the result."
   (make-request-with-callback {:method       :post
-			       :url          (str host "/queue/" queue)
+			       :url          (str host "/queues/" queue)
 			       :content-type "application/json"
 			       :body         msg} callback))
 
