@@ -10,23 +10,18 @@
   (:use ring.middleware.stacktrace)
   (:use compojure.core)
   (:gen-class))
-
-(defn create [params]
-  "Simply construct an asynchronous client. Params is like {:url 'http://localhost'}.
-     Returns a function which accepts request hashes."
-  (client/http-client params))
   
-(defn read-channel [client-fn channel callback]
+(defn read-channel [host channel callback]
   "Reads from 'channel'. Returns a 'result-channel' which you can call 'read-channel' on."
   (pipeline/on-success
-   (client-fn {:method :get, :url (str "http://google.com")})
+   (client/http-request {:method :get :url (str host "/channels/" channel)})
    callback))
 
-(defn update-channel [client-fn channel msg callback]
+(defn update-channel [host channel msg callback]
   "Writes to 'channel'."
   (pipeline/on-success
-   (client-fn {:method       :post
-	       :url          (str "/channels/" channel)
-	       :content-type "application/json"
-	       :body         (json-str msg)})
+   (client/http-request {:method       :post
+			 :url          (str host "/channels/" channel)
+			 :content-type "application/json"
+			 :body         (json-str msg)})
    callback))
