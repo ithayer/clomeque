@@ -4,6 +4,7 @@
   (:require [aleph.http.client       :as client])
   (:require [lamina.core             :as lamina])
   (:require [lamina.core.pipeline    :as pipeline])
+  (:use aleph.formats)
   (:use clojure.pprint)
   (:use clojure.contrib.json)
   (:use ring.adapter.jetty)
@@ -11,17 +12,26 @@
   (:use compojure.core)
   (:gen-class))
   
-(defn read-channel [host channel callback]
-  "Reads from 'channel'. Returns a 'result-channel' which you can call 'read-channel' on."
-  (pipeline/on-success
-   (client/http-request {:method :get :url (str host "/channels/" channel)})
-   callback))
+(defn body-to-string [buf]
+  (lg/info "BEFORE")
+  (let [ary (byte-array (.remaining buf))]
+    (lg/info "HERE")
+    (.get buf ary 0 (.remaining buf))
+    (String. "SDFSDFSD")))
 
-(defn update-channel [host channel msg callback]
-  "Writes to 'channel'."
+(defn read-queue [host queue callback]
+  "Reads from 'queue' and call 'callback' with the results."
+  (pipeline/on-success
+   (client/http-request {:method :get :url (str host "/channels/" queue)})
+   (fn [r]
+     (callback (lg/spy (body-to-string (:body r)))))))
+
+(defn write-queue [host queue msg callback]
+  "Writes to 'queue' and call 'callback' with the result."
   (pipeline/on-success
    (client/http-request {:method       :post
-			 :url          (str host "/channels/" channel)
+			 :url          (str host "/channels/" queue)
 			 :content-type "application/json"
-			 :body         (json-str msg)})
-   callback))
+			 :body         msg})
+   (fn [r]
+     (callback (byte-buffer->string (:body r))))))
