@@ -12,12 +12,8 @@
   (:use compojure.core)
   (:gen-class))
   
-(defn body-to-string [buf]
-  (lg/info "BEFORE")
-  (let [ary (byte-array (.remaining buf))]
-    (lg/info "HERE")
-    (.get buf ary 0 (.remaining buf))
-    (String. "SDFSDFSD")))
+(defn body-to-string [buf-seq]
+  (apply str (map aleph.formats/byte-buffer->string buf-seq)))
 
 (defn read-queue [host queue callback]
   "Reads from 'queue' and call 'callback' with the results."
