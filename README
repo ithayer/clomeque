@@ -1,13 +1,1 @@
-# clomeque
-
-FIXME: write description
-
-## Usage
-
-FIXME: write
-
-## License
-
-Copyright (C) 2011 FIXME
-
-Distributed under the Eclipse Public License, the same as Clojure.
+Very simple event driven REST-based message queue in clojure, based on aleph and lamina. Done as part of a mini hackathon between https://github.com/djunforgetable and https://github.com/ithayer. CRUD operations are supported.
