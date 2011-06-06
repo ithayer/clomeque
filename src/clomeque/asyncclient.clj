@@ -15,19 +15,29 @@
 (defn body-to-string [buf-seq]
   (apply str (map aleph.formats/byte-buffer->string buf-seq)))
 
+(defn- make-request-with-callback [http-request callback]
+  (pipeline/on-success
+   (client/http-request http-request)
+   (fn [r]
+     (callback (body-to-string (:body r))))))
+  
+
+(defn create-queue [host queue callback]
+  "Creates a queue named 'queue'."
+  (make-request-with-callback {:method :put :url (str host "/queue/" queue)} callback))
+
+(defn delete-queue [host queue callback]
+  "Deletes a queue named 'queue'."
+  (make-request-with-callback {:method :delete :url (str host "/queue/" queue)} callback))
+
 (defn read-queue [host queue callback]
   "Reads from 'queue' and call 'callback' with the results."
-  (pipeline/on-success
-   (client/http-request {:method :get :url (str host "/channels/" queue)})
-   (fn [r]
-     (callback (lg/spy (body-to-string (:body r)))))))
+  (make-request-with-callback {:method :get :url (str host "/queue/" queue)} callback))
 
 (defn write-queue [host queue msg callback]
   "Writes to 'queue' and call 'callback' with the result."
-  (pipeline/on-success
-   (client/http-request {:method       :post
-			 :url          (str host "/channels/" queue)
-			 :content-type "application/json"
-			 :body         msg})
-   (fn [r]
-     (callback (byte-buffer->string (:body r))))))
+  (make-request-with-callback {:method       :post
+			       :url          (str host "/queue/" queue)
+			       :content-type "application/json"
+			       :body         msg} callback))
+
