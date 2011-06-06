@@ -67,33 +67,33 @@
     (enqueue res-channel (success-response "Message submitted!"))))
 
 (defroutes web-routes
-  (GET "/channels/:channel-name" [channel-name]
-       (lg/info (str "Got read request for queue" channel-name))
-       (let [q (get @queues channel-name)]
+  (GET "/queues/:queue-name" [queue-name]
+       (lg/info (str "Got read request for queue" queue-name))
+       (let [q (get @queues queue-name)]
 	 (if q
 	   (wrap-aleph-handler (partial read-queue q))
-	   (error-response (str "Channel" channel-name "does not exist")))))
-  (PUT "/channels/:channel-name" [channel-name]
-       (lg/info (str "Got request to create queue with name" channel-name))
+	   (error-response (str "Queue" queue-name "does not exist")))))
+  (PUT "/queues/:queue-name" [queue-name]
+       (lg/info (str "Got request to create queue with name" queue-name))
        (dosync
-	(if (@queues channel-name)
+	(if (@queues queue-name)
 	  (error-response "Queue already exists")
-	  (let [queues (alter queues assoc channel-name (create-queue))]
-	    (success-response (str "Queue" channel-name "created!"))))))
-  (POST "/channels/:channel-name" [channel-name]
-	(lg/info (str "Got message submit request on queue" channel-name))
-	(let [q (get @queues channel-name)]
+	  (let [queues (alter queues assoc queue-name (create-queue))]
+	    (success-response (str "Queue" queue-name "created!"))))))
+  (POST "/queues/:queue-name" [queue-name]
+	(lg/info (str "Got message submit request on queue" queue-name))
+	(let [q (get @queues queue-name)]
 	  (if q
 	    (wrap-aleph-handler (partial write-queue q))
-	    (error-response (str "Channel" channel-name "does not exist")))))
-  (DELETE "/channels/:channel-name" [channel-name]
-	  (lg/info (str "Got request to delete queue with name" channel-name))
+	    (error-response (str "Queue" queue-name "does not exist")))))
+  (DELETE "/queues/:queue-name" [queue-name]
+	  (lg/info (str "Got request to delete queue with name" queue-name))
 	  (dosync
-	   (if (@queues channel-name)
+	   (if (@queues queue-name)
 	     (do
-	       (alter queues dissoc channel-name)
-	       (success-response (str "Queue" channel-name "was deleted!")))
-	     (error-response (str "Queue" channel-name "does not exist!")))))
+	       (alter queues dissoc queue-name)
+	       (success-response (str "Queue" queue-name "was deleted!")))
+	     (error-response (str "Queue" queue-name "does not exist!")))))
   (route/not-found "Page not found"))
 
 (defn -main [& args]
